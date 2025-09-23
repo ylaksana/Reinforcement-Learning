@@ -47,6 +47,19 @@ def value_prediction(
     Q = np.zeros((states, actions))
     """The Q(s, a) function to estimate"""
 
+    while delta < theta:
+        delta = 0
+        for s in range(states):
+            v = V[s]
+            for a in range(actions):
+                for prob, next_state, reward, _ in P[s][a]:
+                    V[s] = sum(pi.action_prob(s, a) * sum(prob * (reward + gamma * V[next_state])))
+            delta = max(delta, abs(v - V[s]))
+    for s in range(states):
+        for a in range(actions):
+            for prob, next_state, reward, _ in P[s][a]:
+                Q[s, a] = sum(prob * (reward + gamma * V[next_state]))
+
     return V, Q
 
 def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float) -> Tuple[np.array, Policy]:
@@ -82,4 +95,14 @@ def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float)
     P: np.ndarray = env.P
     """Transition Dynamics;  env.P[state][action] returns a list of tuples [(prob, next_state, reward, done)]"""
 
+    while delta < theta:
+        delta = 0
+        for s in range(nS):
+            v = V[s]
+            for a in range(nA):
+                for prob, next_state, reward, _ in P[s][a]:
+                    Q[s, a] += prob * (reward + gamma * V[next_state])
+            V[s] = np.max(Q[s])
+            delta = max(delta, abs(v - V[s]))
+            
     return V, Policy_DeterministicGreedy(Q)
