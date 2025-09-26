@@ -180,7 +180,6 @@ class BanditSolver(Solver):
             a = policy.action(None)
             _, r, done, truncated, info = env.step(a)
             method.update(a, r)
-            policy.update(a, r)
 
             rs.append(r)
             best_action_taken.append(info["ideal_action"])
