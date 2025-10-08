@@ -49,23 +49,19 @@ def off_policy_mc_prediction_weighted_importance_sampling(
     #   -  Every-visit implementation is fine.
     #   -  Look at `reversed()` to iterate over a trajectory in reverse order.
     #   -  You can use the `pi.action_prob(state, action)` and `bpi.action_prob(state, action)` methods to get the action probabilities.
-
+    
 
     # for each episode
     for ep in trajs:
         G = 0.0
         W = 1.0
 
-        # keep track of visited state-action pairs in this episode for first-visit MC
-        visited = []
 
         # for each step in the episode, iterate backwards
         for (s, a, r, _) in reversed(ep):
             G = gamma * G + r
-            if (s, a) not in visited:
-                visited.append((s, a))
-                C[s, a] += W
-                Q[s, a] += (W / C[s, a]) * (G - Q[s, a])
+            C[s, a] += W
+            Q[s, a] += (W / C[s, a]) * (G - Q[s, a])
             W *= pi.action_prob(s, a) / bpi.action_prob(s, a)
             if W == 0:
                 break
@@ -134,8 +130,8 @@ def off_policy_mc_prediction_ordinary_importance_sampling(
             G = gamma * G + r
 
             # update for every time we visit this state-action pair, not just the first visit
-            N += 1.0
-            Q[s, a] += (1/N) * ((W*G) - Q[s, a])
+            C[s, a] += 1
+            Q[s, a] += (1/C[s, a]) * ((W*G) - Q[s, a])
             W *= pi.action_prob(s, a) / bpi.action_prob(s, a)
             if W == 0:
                 break
