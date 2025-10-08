@@ -47,6 +47,33 @@ def value_prediction(
     Q = np.zeros((states, actions))
     """The Q(s, a) function to estimate"""
 
+    delta = theta
+    while delta >= theta: # iterate until convergence
+        delta = 0 # reset delta for this iteration
+        V_new = np.copy(V)  # 
+        
+        for s in range(states):
+            old_value = V[s] # save the previous value for convergence check
+            V_new[s] = 0 # initialize states to 0 for updates
+            
+            for a in range(actions):
+                action_prob = pi.action_prob(s, a) # get the probability of taking action a in state s under policy pi
+                for prob, next_state, reward, _ in P[s][a]:
+                    V_new[s] += action_prob * prob * (reward + gamma * V[next_state]) # weighted bellman update for V(s)
+
+            delta = max(delta, abs(old_value - V_new[s])) # check to see if change in state values is below threshold theta
+
+        V = V_new  # update all states
+
+    # find Q
+    for s in range(states):
+        for a in range(actions):
+            Q[s, a] = 0
+            for prob, next_state, reward, _ in P[s][a]:
+                Q[s, a] += prob * (reward + gamma * V[next_state])
+
+    return V, Q
+
     return V, Q
 
 def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float) -> Tuple[np.array, Policy]:
@@ -81,5 +108,19 @@ def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float)
     """Initial policy, you will need to update this policy after each iteration"""
     P: np.ndarray = env.P
     """Transition Dynamics;  env.P[state][action] returns a list of tuples [(prob, next_state, reward, done)]"""
+
+    delta = theta
+    while delta >= theta: # iterate until convergence
+        delta = 0 # reset delta for this iteration
+        for s in range(nS): 
+            v = V[s] # save the previous value for convergence check
+            for a in range(nA):
+                Q[s, a] = 0 # initialize Q(s,a) to 0 for updates
+                for prob, next_state, reward, _ in P[s][a]:
+                    Q[s, a] += prob * (reward + gamma * V[next_state]) # weighted bellman update
+            V[s] = max(Q[s, :]) # take the max over all actions
+            delta = max(delta, abs(v - V[s])) # check to see if change in state values is below threshold theta
+        
+
 
     return V, Policy_DeterministicGreedy(Q)
