@@ -49,7 +49,7 @@ def off_policy_mc_prediction_weighted_importance_sampling(
     #   -  Every-visit implementation is fine.
     #   -  Look at `reversed()` to iterate over a trajectory in reverse order.
     #   -  You can use the `pi.action_prob(state, action)` and `bpi.action_prob(state, action)` methods to get the action probabilities.
-    
+
 
     # for each episode
     for ep in trajs:
@@ -59,10 +59,18 @@ def off_policy_mc_prediction_weighted_importance_sampling(
 
         # for each step in the episode, iterate backwards
         for (s, a, r, _) in reversed(ep):
+            # update the return
             G = gamma * G + r
+            
+            # update the q value for every time we visit this state-action pair
+            # we record the cumulative weight since this is weighted importance sampling
             C[s, a] += W
+            # update the q value using the off-policy MC prediction update
+            # we use the cumulative sum of weights
             Q[s, a] += (W / C[s, a]) * (G - Q[s, a])
+            # update the weight
             W *= pi.action_prob(s, a) / bpi.action_prob(s, a)
+            # if the weight == zero, we can stop processing this episode
             if W == 0:
                 break
 
@@ -119,7 +127,9 @@ def off_policy_mc_prediction_ordinary_importance_sampling(
     #   -  Look at `reversed()` to iterate over a trajectory in reverse order.
     #   -  You can use the `pi.action_prob(state, action)` and `bpi.action_prob(state, action)` methods to get the action probabilities.
 
-
+    # the algorithm is identical since this is still off policy MC prediction
+    # however, for ordinary importance sampling, we need to keep track of the count of returns for each state-action pair rather than the cumulative sum of weights.
+    
     # for each episode
     for ep in trajs:
         G = 0.0
@@ -127,12 +137,17 @@ def off_policy_mc_prediction_ordinary_importance_sampling(
 
         # for each step in the episode, iterate backwards
         for (s, a, r, _) in reversed(ep):
+            # update the return
             G = gamma * G + r
 
             # update for every time we visit this state-action pair, not just the first visit
+            # we record the count of returns for this state-action pair since this is ordinary importance sampling
             C[s, a] += 1
-            Q[s, a] += (1/C[s, a]) * ((W*G) - Q[s, a])
+            # we use the count of returns instead of the cumulative sum of weights
+            Q[s, a] += (W/C[s, a]) * (G - Q[s, a])
+            # update the weight
             W *= pi.action_prob(s, a) / bpi.action_prob(s, a)
+            # if the weight == zero, we can stop processing this episode
             if W == 0:
                 break
 
